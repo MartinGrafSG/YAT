@@ -1,5 +1,6 @@
 import pygame
 import random
+from Shapes import *
  
 """
 10 x 20 square grid
@@ -13,7 +14,7 @@ pygame.font.init()
 s_width = 800
 s_height = 700
 play_width = 300  # meaning 300 // 10 = 30 width per block
-play_height = 600  # meaning 600 // 20 = 20 height per blo ck
+play_height = 600  # meaning 600 // 20 = 20 height per block
 block_size = 30
  
 top_left_x = (s_width - play_width) // 2
@@ -22,110 +23,7 @@ top_left_y = s_height - play_height
  
 # SHAPE FORMATS
  
-S = [['.....',
-      '.....',
-      '..00.',
-      '.00..',
-      '.....'],
-     ['.....',
-      '..0..',
-      '..00.',
-      '...0.',
-      '.....']]
- 
-Z = [['.....',
-      '.....',
-      '.00..',
-      '..00.',
-      '.....'],
-     ['.....',
-      '..0..',
-      '.00..',
-      '.0...',
-      '.....']]
- 
-I = [['..0..',
-      '..0..',
-      '..0..',
-      '..0..',
-      '.....'],
-     ['.....',
-      '0000.',
-      '.....',
-      '.....',
-      '.....']]
- 
-O = [['.....',
-      '.....',
-      '.00..',
-      '.00..',
-      '.....']]
- 
-J = [['.....',
-      '.0...',
-      '.000.',
-      '.....',
-      '.....'],
-     ['.....',
-      '..00.',
-      '..0..',
-      '..0..',
-      '.....'],
-     ['.....',
-      '.....',
-      '.000.',
-      '...0.',
-      '.....'],
-     ['.....',
-      '..0..',
-      '..0..',
-      '.00..',
-      '.....']]
- 
-L = [['.....',
-      '...0.',
-      '.000.',
-      '.....',
-      '.....'],
-     ['.....',
-      '..0..',
-      '..0..',
-      '..00.',
-      '.....'],
-     ['.....',
-      '.....',
-      '.000.',
-      '.0...',
-      '.....'],
-     ['.....',
-      '.00..',
-      '..0..',
-      '..0..',
-      '.....']]
- 
-T = [['.....',
-      '..0..',
-      '.000.',
-      '.....',
-      '.....'],
-     ['.....',
-      '..0..',
-      '..00.',
-      '..0..',
-      '.....'],
-     ['.....',
-      '.....',
-      '.000.',
-      '..0..',
-      '.....'],
-     ['.....',
-      '..0..',
-      '.00..',
-      '..0..',
-      '.....']]
- 
-shapes = [S, Z, I, O, J, L, T]
-shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
+
 # index 0 - 6 represent shape
  
  
@@ -280,10 +178,12 @@ def main():
     current_piece = get_shape()
     next_piece = get_shape()
     clock = pygame.time.Clock()
-    fall_time = 0
- 
+    fall_time = 0 
+    pygame.mixer.init(44100, -16, 2, 2048)
+    pygame.mixer.music.load("src\Tetris.mp3")
+    #pygame.mixer.music.play(-1)
     while run:
-        fall_speed = 0.37
+        fall_speed = 0.45
  
         grid = create_grid(locked_positions)
         fall_time += clock.get_rawtime()
@@ -301,6 +201,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.display.quit()
+                pygame.mixer.music.pause()
                 quit()
  
             if event.type == pygame.KEYDOWN:
@@ -313,23 +214,24 @@ def main():
                     current_piece.x += 1
                     if not valid_space(current_piece, grid):
                         current_piece.x -= 1
-                elif event.key == pygame.K_UP:
-                    # rotate shape
-                    current_piece.rotation = current_piece.rotation + 1 % len(current_piece.shape)
-                    if not valid_space(current_piece, grid):
-                        current_piece.rotation = current_piece.rotation - 1 % len(current_piece.shape)
  
-                if event.key == pygame.K_DOWN:
+                elif event.key == pygame.K_DOWN:
                     # move shape down
                     current_piece.y += 1
                     if not valid_space(current_piece, grid):
                         current_piece.y -= 1
  
-                if event.key == pygame.K_SPACE:
+                elif event.key == pygame.K_SPACE:
                    while valid_space(current_piece, grid):
                        current_piece.y += 1
                    current_piece.y -= 1
                    print(convert_shape_format(current_piece))
+                
+                else:
+                    # rotate shape
+                    current_piece.rotation = current_piece.rotation + 1 % len(current_piece.shape)
+                    if not valid_space(current_piece, grid):
+                        current_piece.rotation = current_piece.rotation - 1 % len(current_piece.shape)
  
         shape_pos = convert_shape_format(current_piece)
  
