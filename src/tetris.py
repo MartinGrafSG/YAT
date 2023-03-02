@@ -11,21 +11,16 @@ represented in order by 0 - 6
 pygame.font.init()
  
 # GLOBALS VARS
-s_width = 800
-s_height = 700
-play_width = 300  # meaning 300 // 10 = 30 width per block
-play_height = 600  # meaning 600 // 20 = 20 height per block
-block_size = 30
+
+block_size = 40
+play_width = 10 * block_size
+play_height = 20 * block_size
+
+s_width = 1000
+s_height = 1000
  
 top_left_x = (s_width - play_width) // 2
 top_left_y = s_height - play_height
- 
- 
-# SHAPE FORMATS
- 
-
-# index 0 - 6 represent shape
- 
  
 class Piece(object):
     rows = 20  # y
@@ -38,7 +33,6 @@ class Piece(object):
         self.color = shape_colors[shapes.index(shape)]
         self.rotation = 0  # number from 0-3
  
- 
 def create_grid(locked_positions={}):
     grid = [[(0,0,0) for x in range(10)] for x in range(20)]
  
@@ -49,8 +43,7 @@ def create_grid(locked_positions={}):
                 grid[i][j] = c
     return grid
  
- 
-def convert_shape_format(shape):
+def convert_shape_format(shape) -> None:
     positions = []
     format = shape.shape[shape.rotation % len(shape.shape)]
  
@@ -65,8 +58,7 @@ def convert_shape_format(shape):
  
     return positions
  
- 
-def valid_space(shape, grid):
+def valid_space(shape, grid) -> bool:
     accepted_positions = [[(j, i) for j in range(10) if grid[i][j] == (0,0,0)] for i in range(20)]
     accepted_positions = [j for sub in accepted_positions for j in sub]
     formatted = convert_shape_format(shape)
@@ -78,20 +70,17 @@ def valid_space(shape, grid):
  
     return True
  
- 
-def check_lost(positions):
+def check_lost(positions) -> bool:
     for pos in positions:
         x, y = pos
         if y < 1:
             return True
     return False
  
- 
-def get_shape():
+def get_shape() -> Piece:
     global shapes, shape_colors
  
     return Piece(5, 0, random.choice(shapes))
- 
  
 def draw_text_middle(text, size, color, surface):
     font = pygame.font.SysFont('comicsans', size, bold=True)
@@ -99,19 +88,16 @@ def draw_text_middle(text, size, color, surface):
  
     surface.blit(label, (top_left_x + play_width/2 - (label.get_width() / 2), top_left_y + play_height/2 - label.get_height()/2))
  
- 
 def draw_grid(surface, row, col):
     sx = top_left_x
     sy = top_left_y
     for i in range(row):
-        pygame.draw.line(surface, (128,128,128), (sx, sy+ i*30), (sx + play_width, sy + i * 30))  # horizontal lines
+        pygame.draw.line(surface, (128,128,128), (sx, sy+ i*block_size), (sx + play_width, sy + i * block_size))  # horizontal lines
         for j in range(col):
-            pygame.draw.line(surface, (128,128,128), (sx + j * 30, sy), (sx + j * 30, sy + play_height))  # vertical lines
- 
+            pygame.draw.line(surface, (128,128,128), (sx + j * block_size, sy), (sx + j * block_size, sy + play_height))  # vertical lines
  
 def clear_rows(grid, locked):
     # need to see if row is clear the shift every other row above down one
- 
     inc = 0
     for i in range(len(grid)-1,-1,-1):
         row = grid[i]
@@ -131,7 +117,6 @@ def clear_rows(grid, locked):
                 newKey = (x, y + inc)
                 locked[newKey] = locked.pop(key)
  
- 
 def draw_next_shape(shape, surface):
     font = pygame.font.SysFont('comicsans', 30)
     label = font.render('Next Shape', 1, (255,255,255))
@@ -144,10 +129,9 @@ def draw_next_shape(shape, surface):
         row = list(line)
         for j, column in enumerate(row):
             if column == '0':
-                pygame.draw.rect(surface, shape.color, (sx + j*30, sy + i*30, 30, 30), 0)
+                pygame.draw.rect(surface, shape.color, (sx + j*block_size, sy + i*block_size, block_size, block_size), 0)
  
-    surface.blit(label, (sx + 10, sy- 30))
- 
+    surface.blit(label, (sx + 10, sy- block_size))
  
 def draw_window(surface):
     surface.fill((0,0,0))
@@ -155,17 +139,56 @@ def draw_window(surface):
     font = pygame.font.SysFont('comicsans', 60)
     label = font.render('TETRIS', 1, (255,255,255))
  
-    surface.blit(label, (top_left_x + play_width / 2 - (label.get_width() / 2), 30))
+    surface.blit(label, (top_left_x + play_width / 2 - (label.get_width() / 2), block_size))
  
     for i in range(len(grid)):
         for j in range(len(grid[i])):
-            pygame.draw.rect(surface, grid[i][j], (top_left_x + j* 30, top_left_y + i * 30, 30, 30), 0)
+            pygame.draw.rect(surface, grid[i][j], (top_left_x + j* block_size, top_left_y + i * block_size, block_size, block_size), 0)
  
     # draw grid and border
     draw_grid(surface, 20, 10)
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 5)
-    # pygame.display.update()
- 
+
+def handle_events(piece: Piece):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+            pygame.display.quit()
+            pygame.mixer.music.pause()
+            quit()
+
+        if event.type == pygame.KEYDOWN:
+            handle_keyDown(event, piece)
+
+def handle_keyDown(event, piece : Piece):
+    if event.key == pygame.K_LEFT:
+        piece.x -= 1
+        if not valid_space(piece, grid):
+            piece.x += 1
+
+    elif event.key == pygame.K_RIGHT:
+        piece.x += 1
+        if not valid_space(piece, grid):
+            piece.x -= 1
+
+    elif event.key == pygame.K_DOWN:
+        # move shape down
+        piece.y += 1
+        if not valid_space(piece, grid):
+            piece.y -= 1
+
+    elif event.key == pygame.K_SPACE:
+        while valid_space(piece, grid):
+            piece.y += 1
+        piece.y -= 1
+        print(convert_shape_format(piece))
+    
+    else:
+        # rotate shape
+        piece.rotation = piece.rotation + 1 % len(piece.shape)
+        if not valid_space(piece, grid):
+            piece.rotation = piece.rotation - 1 % len(piece.shape)
+    return
  
 def main():
     global grid
@@ -197,41 +220,7 @@ def main():
                 current_piece.y -= 1
                 change_piece = True
  
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
-                pygame.display.quit()
-                pygame.mixer.music.pause()
-                quit()
- 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    current_piece.x -= 1
-                    if not valid_space(current_piece, grid):
-                        current_piece.x += 1
- 
-                elif event.key == pygame.K_RIGHT:
-                    current_piece.x += 1
-                    if not valid_space(current_piece, grid):
-                        current_piece.x -= 1
- 
-                elif event.key == pygame.K_DOWN:
-                    # move shape down
-                    current_piece.y += 1
-                    if not valid_space(current_piece, grid):
-                        current_piece.y -= 1
- 
-                elif event.key == pygame.K_SPACE:
-                   while valid_space(current_piece, grid):
-                       current_piece.y += 1
-                   current_piece.y -= 1
-                   print(convert_shape_format(current_piece))
-                
-                else:
-                    # rotate shape
-                    current_piece.rotation = current_piece.rotation + 1 % len(current_piece.shape)
-                    if not valid_space(current_piece, grid):
-                        current_piece.rotation = current_piece.rotation - 1 % len(current_piece.shape)
+        handle_events(current_piece)
  
         shape_pos = convert_shape_format(current_piece)
  
@@ -270,7 +259,7 @@ def main_menu():
     run = True
     while run:
         win.fill((0,0,0))
-        draw_text_middle('Press any key to begin.', 60, (255, 255, 255), win)
+        draw_text_middle('Irgendeine Taste drücken ;-)', 60, (255, 255, 255), win)
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
