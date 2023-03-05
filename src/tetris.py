@@ -111,7 +111,7 @@ def clear_rows(grid, locked) -> int:
                 locked[newKey] = locked.pop(key)
     return filledRowsCount
  
-def drawSideInfo(shape, surface):
+def drawSideInfo(shape, surface, score, level):
     font = pygame.font.SysFont('comicsans', 30)
     sx = top_left_x + play_width + 50
     sy = top_left_y + play_height/2
@@ -119,11 +119,11 @@ def drawSideInfo(shape, surface):
     label = font.render('Next Shape', 1, (255,255,255))
     surface.blit(label, (sx + 10, sy- block_size))
 
-    label = font.render('Level:', 1, (255,255,255))
-    surface.blit(label, (sx + 10, sy- block_size - 200))
+    label = font.render('Level: ' + str(level), 1, (255,255,255))
+    surface.blit(label, (sx + 10, sy- block_size - 300))
 
-    label = font.render('Score:', 1, (255,255,255))
-    surface.blit(label, (sx + 10, sy - block_size - 300))
+    label = font.render('Score: ' + str(score), 1, (255,255,255))
+    surface.blit(label, (sx + 10, sy - block_size - 200))
  
     format = shape.shape[shape.rotation % len(shape.shape)]
     for i, line in enumerate(format):
@@ -202,13 +202,15 @@ def main():
     current_piece = get_shape()
     next_piece = get_shape()
     clock = pygame.time.Clock()
+    startTick = pygame.time.get_ticks()
     fall_time = 0 
     pygame.mixer.init(44100, -16, 2, 2048)
     pygame.mixer.music.load("src\Tetris.mp3")
     pygame.mixer.music.play(-1)
+    score = 0
+    level = 0
+    fall_speed = 0.6
     while run:
-        fall_speed = 0.45
- 
         grid = create_grid(locked_positions)
         fall_time += clock.get_rawtime()
         clock.tick()
@@ -240,17 +242,24 @@ def main():
             next_piece = get_shape()
             change_piece = False
  
-            clear_rows(grid, locked_positions)
+            filledRowsCount = clear_rows(grid, locked_positions)
+            score += filledRowsCount * 25
  
-        draw_window(win)
-        drawSideInfo(next_piece, win)
+        currentTick = pygame.time.get_ticks()
+        gameDurationInSecs = (currentTick - startTick)/1000
+        if gameDurationInSecs >= 60:
+            level += 1
+            fall_speed = fall_speed * 0.9
+            startTick = currentTick
+        draw_window(window)
+        drawSideInfo(next_piece, window, score, level)
         pygame.display.update()
- 
+        
         # Check if user lost
         if check_lost(locked_positions):
             run = False
  
-    draw_text_middle("You Lost", 40, (255,255,255), win)
+    draw_text_middle("You Lost", 40, (255,255,255), window)
     pygame.display.update()
     pygame.time.delay(2000)
  
@@ -258,8 +267,8 @@ def main():
 def main_menu():
     run = True
     while run:
-        win.fill((0,0,0))
-        draw_text_middle('Irgendeine Taste drücken ;-)', 60, (255, 255, 255), win)
+        window.fill((0,0,0))
+        draw_text_middle('Irgendeine Taste drücken ;-)', 60, (255, 255, 255), window)
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -270,7 +279,7 @@ def main_menu():
     pygame.quit()
  
  
-win = pygame.display.set_mode((s_width, s_height))
+window = pygame.display.set_mode((s_width, s_height))
 pygame.display.set_caption('Tetris')
  
 main_menu()  # start game
