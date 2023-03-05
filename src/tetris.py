@@ -2,16 +2,8 @@ import pygame
 import random
 from Shapes import *
  
-"""
-10 x 20 square grid
-shapes: S, Z, I, O, J, L, T
-represented in order by 0 - 6
-"""
- 
 pygame.font.init()
  
-# GLOBALS VARS
-
 block_size = 40
 play_width = 10 * block_size
 play_height = 20 * block_size
@@ -96,13 +88,13 @@ def draw_grid(surface, row, col):
         for j in range(col):
             pygame.draw.line(surface, (128,128,128), (sx + j * block_size, sy), (sx + j * block_size, sy + play_height))  # vertical lines
  
-def clear_rows(grid, locked):
-    # need to see if row is clear the shift every other row above down one
-    inc = 0
+def clear_rows(grid, locked) -> int:
+    # need to see if row is clear then shift every other row above down one
+    filledRowsCount = 0
     for i in range(len(grid)-1,-1,-1):
         row = grid[i]
         if (0, 0, 0) not in row:
-            inc += 1
+            filledRowsCount += 1
             # add positions to remove from locked
             ind = i
             for j in range(len(row)):
@@ -110,42 +102,51 @@ def clear_rows(grid, locked):
                     del locked[(j, i)]
                 except:
                     continue
-    if inc > 0:
+    if filledRowsCount > 0:
+        print("inc = ", str(filledRowsCount), "\n")
         for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
             x, y = key
             if y < ind:
-                newKey = (x, y + inc)
+                newKey = (x, y + filledRowsCount)
                 locked[newKey] = locked.pop(key)
+    return filledRowsCount
  
-def draw_next_shape(shape, surface):
+def drawSideInfo(shape, surface):
     font = pygame.font.SysFont('comicsans', 30)
-    label = font.render('Next Shape', 1, (255,255,255))
- 
     sx = top_left_x + play_width + 50
-    sy = top_left_y + play_height/2 - 100
-    format = shape.shape[shape.rotation % len(shape.shape)]
+    sy = top_left_y + play_height/2
+    
+    label = font.render('Next Shape', 1, (255,255,255))
+    surface.blit(label, (sx + 10, sy- block_size))
+
+    label = font.render('Level:', 1, (255,255,255))
+    surface.blit(label, (sx + 10, sy- block_size - 200))
+
+    label = font.render('Score:', 1, (255,255,255))
+    surface.blit(label, (sx + 10, sy - block_size - 300))
  
+    format = shape.shape[shape.rotation % len(shape.shape)]
     for i, line in enumerate(format):
         row = list(line)
         for j, column in enumerate(row):
             if column == '0':
                 pygame.draw.rect(surface, shape.color, (sx + j*block_size, sy + i*block_size, block_size, block_size), 0)
  
-    surface.blit(label, (sx + 10, sy- block_size))
+    
  
 def draw_window(surface):
     surface.fill((0,0,0))
+
     # Tetris Title
     font = pygame.font.SysFont('comicsans', 60)
     label = font.render('TETRIS', 1, (255,255,255))
- 
     surface.blit(label, (top_left_x + play_width / 2 - (label.get_width() / 2), block_size))
- 
+
+    # draw grid and border
     for i in range(len(grid)):
         for j in range(len(grid[i])):
             pygame.draw.rect(surface, grid[i][j], (top_left_x + j* block_size, top_left_y + i * block_size, block_size, block_size), 0)
  
-    # draw grid and border
     draw_grid(surface, 20, 10)
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 5)
 
@@ -204,7 +205,7 @@ def main():
     fall_time = 0 
     pygame.mixer.init(44100, -16, 2, 2048)
     pygame.mixer.music.load("src\Tetris.mp3")
-    #pygame.mixer.music.play(-1)
+    pygame.mixer.music.play(-1)
     while run:
         fall_speed = 0.45
  
@@ -239,11 +240,10 @@ def main():
             next_piece = get_shape()
             change_piece = False
  
-            # call four times to check for multiple clear rows
             clear_rows(grid, locked_positions)
  
         draw_window(win)
-        draw_next_shape(next_piece, win)
+        drawSideInfo(next_piece, win)
         pygame.display.update()
  
         # Check if user lost
